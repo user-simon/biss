@@ -1,0 +1,12 @@
+# Build
+build/
+
+# VSCode
+.cache/
+.vscode/
+
+# CMake
+*.cmake
+CMakeFiles/
+CMakeSettings.json
+CMakeCache.txt
