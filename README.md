@@ -8,7 +8,7 @@ Currently, only the AST, parser, and general framework for rewrite rules are imp
 
 **biss** is (or, will be) an arithmetic expression evaluation and simplification engine. This is achieved using [rules](#rules) which provide a declarative method of specifying mathematical rules that can be applied to expressions.
 
-The overall purpose of this project is to be able to perform evaluations and at least rudimentary simplifications on arithmetic expressions supplied as strings. [main(.cpp)](src/main.cpp) defines a command-line UI for this. These examples show the eventual goal of the capabilities of the system:
+The overall purpose of this project is to be able to perform evaluations and at least rudimentary simplifications on arithmetic expressions supplied as strings. [main(.cpp)](src/main.cpp) defines a command-line UI for this. These examples demonstrate the eventual goal of the capabilities of the system:
 
 ```
 > 1 + 2(3**2 * max(2 , 3))
@@ -21,7 +21,7 @@ The overall purpose of this project is to be able to perform evaluations and at 
 ```
 
 ```
-> x^2 * 0
+> x**2 * 0
 0
 ```
 
@@ -133,12 +133,12 @@ Ultimately, rules will be used both to perform simplifications and to numericall
 Matching a predicate with an expression involves determining if the expression holds the general shape required, and extracting the tagged sub-expressions if so. For the following reasons, this is not as trivial as it might seem:
 
 1. We cannot naively match nested predicates in a `predicate::Call` against the nested expressions in an `ast::Call` 1:1, since the order of the arguments may change according to the function's commutativity. Consider once more the rule `1 * Any[0] → [0]`, now applied to the expression `x * 1`; though all sub-predicates have a corresponding expression, they are not in the same position. The matcher therefore has to be able to consider all possible permutations of arguments in a commutative function call. 
-2. Decisions made locally affect the global ability to match the predicate against the expression. Consider the rule `(Any[0] * Any[1]) / Any[0] → Any[1]` matched against the expression `(a * b) / b`. Simply performing a recursive match and greedily tagging expressions as they are encountered would erroneously bind the tag `0` to `a`, causing the match of the denominator to fail. 
+2. Decisions made locally affect the global ability to match the predicate against the expression. Consider the rule `(Any[0] * Any[1]) / Any[0] → [1]` matched against the expression `(a * b) / b`. Simply performing a recursive match and greedily tagging expressions as they are encountered would erroneously bind the tag `0` to `a`, causing the match of the denominator to fail. 
 3. Arbitrary nesting of repeated operations makes it difficult to consider the entire expression. Consider the expression `1 + (2 + x)`, which we would ideally want to simplify as `3 + x`. Since the literal constituents of the addition are not immediately next to each other in the tree, it makes it extraordinarily difficult to design a rule-set to handle this. 
 
 The solutions to these problems are two-fold; though only the first of which have been implemented in code as of yet. 
 
-Problem #3 can be solved by allowing certain function calls to have arguments exceeding its arity, and to then collect all arguments of nested function calls of the same function inside the top-level function call, thereby *flattening* it (see [engine.cpp → flatten()](src/engine/engine.cpp#17) for an implementation of this algorithm). For example: `1 + (2 + x)` may flattened to a single function call of addition containing three arguments: `+(1, 2, x)`. 
+Problem #3 can be solved by allowing certain function calls to have arguments exceeding its arity, and to then collect all arguments of nested function calls of the same function inside the top-level function call, thereby *flattening* it (see [engine.cpp → flatten()](src/engine/engine.cpp#L17) for an implementation of this algorithm). For example: `1 + (2 + x)` may flattened to a single function call of addition containing three arguments: `+(1, 2, x)`. 
 
 As for the first two problems, an algorithm I've been playing around with consists of the following steps:
 
@@ -188,7 +188,7 @@ New functions may be added by first adding it to the array of functions recogniz
 
 The parser supports function/operator overloading, based on the number of arguments, though the only implemented examples of this are the arithmetic negation operator and the subtraction operator which share the identifier `-`. 
 
-Operators and functions are largely equivalent, the only real difference being that operators may be parsed according to their priority whereas functions have the de-facto priority of `L1`. If you were so inclined, you could call a function with the operator syntax, and an operator with the function syntax:
+Operators and functions are largely equivalent, the only real difference being that operators may be parsed according to their priority whereas functions have the de-facto priority of `L1`. If we were so inclined, we could call an operator with the function syntax, and a function with the operator syntax: 
 
 ```
 > *(2, 3)
